@@ -38,11 +38,15 @@ USGS US Topo quadrangles are large, single-sheet maps. This tool:
 ## Downloading USGS quadrangles
 
 1. Go to the [USGS National Map Downloader](https://apps.nationalmap.gov/downloader/)
+   - Or use [USGS topoView](https://ngmdb.usgs.gov/topoview/viewer)
 2. Search for a location and select **US Topo** as the product type
 3. Download the ZIP — it contains several files including two `.tif` files:
    - `*_TM_geo.tif` — the standard topographic map (use this one)
    - `*_TMorth_geo.tif` — an orthophoto-backed variant (also works)
 4. The `.tfw`, `.tif.prj`, and `.tif.xml` sidecar files are **not needed** — all coordinate metadata is embedded in the GeoTIFF itself
+
+> [!NOTE]
+> This tool is only tested for 2022 USGS quadrangles (1:24,000). Using prior years or other sizes may not render properly.
 
 ---
 
