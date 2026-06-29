@@ -1,5 +1,7 @@
 __pycache__
-.claude
 inputs/*
-!inputs/
+!inputs/.gitkeep
 outputs/*
+!outputs/.gitkeep
+.claude
+.DS_Store
