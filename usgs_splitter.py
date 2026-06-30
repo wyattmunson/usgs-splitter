@@ -17,6 +17,7 @@ import sys
 import os
 import math
 import argparse
+import re
 
 import numpy as np
 import rasterio
@@ -136,9 +137,9 @@ _COLLAR_ELEMENTS = {
     #   59–74%  state locator + adjoining quadrangles          ← isolated here
     #   74–84%  road classification
     #   84–100% title / barcode
-    'declination':   (0.305, 0.095, 0.00, 0.88),
+    'declination':   (0.305, 0.078, 0.00, 0.55),  # stop before the US National Grid box
     'state_locator': (0.620, 0.090, 0.00, 0.50),
-    'adj_quads':     (0.595, 0.160, 0.50, 0.50),
+    'adj_quads':     (0.595, 0.160, 0.50, 0.38),  # tighter — grid+names only
 }
 
 
@@ -295,7 +296,7 @@ def render_quadrant_page(pdf, name, img, bounds, page_num, map_name):
     h_px, w_px = img.shape[:2]
     mid_lat = (north + south) / 2
 
-    fig, ax = plt.subplots(figsize=(8.5, 11), dpi=150)
+    fig, ax = plt.subplots(figsize=(8.5, 11), dpi=300)
     fig.patch.set_facecolor('white')
 
     # Show in pixel space — imshow default is aspect='equal' (square pixels),
@@ -383,7 +384,7 @@ def render_cover_page(pdf, bounds, map_name, quadrants, collar_imgs):
     mid_lat = (north + south) / 2
     mid_lon = (east  + west)  / 2
 
-    fig = plt.figure(figsize=(8.5, 11), dpi=150)
+    fig = plt.figure(figsize=(8.5, 11), dpi=300)
     fig.patch.set_facecolor('white')
 
     # ── Title ────────────────────────────────────────────────────────────
@@ -401,22 +402,22 @@ def render_cover_page(pdf, bounds, map_name, quadrants, collar_imgs):
     rule_ax.axis('off')
 
     # ── Collar panels ────────────────────────────────────────────────────
-    panel_defs = [
-        ('declination',   'Grid & Magnetic North'),
-        ('state_locator', 'Quadrangle Location'),
-        ('adj_quads',     'Adjoining Quadrangles'),
-    ]
-    PANEL_W = 0.255
-    PANEL_H = 0.160
+    # Each entry: (collar_key, display_label, panel_width_frac, panel_height_frac)
+    # adj_quads gets a wider box to suit its landscape 3×3 grid layout.
     PANEL_GAP = 0.018
-    total_w = 3 * PANEL_W + 2 * PANEL_GAP
+    panel_defs = [
+        ('declination',   'Grid & Magnetic North', 0.240, 0.185),
+        ('state_locator', 'Quadrangle Location',   0.240, 0.185),
+        ('adj_quads',     'Adjoining Quadrangles', 0.310, 0.185),
+    ]
+    total_w    = sum(w for _, _, w, _ in panel_defs) + PANEL_GAP * (len(panel_defs) - 1)
     panel_left = (1.0 - total_w) / 2
     panel_top  = 0.881   # top edge of panels in figure coords
 
-    for i, (key, label) in enumerate(panel_defs):
-        x0 = panel_left + i * (PANEL_W + PANEL_GAP)
-        y0 = panel_top - PANEL_H
-        ax_p = fig.add_axes([x0, y0, PANEL_W, PANEL_H])
+    x_cursor = panel_left
+    for key, label, pw, ph in panel_defs:
+        y0   = panel_top - ph
+        ax_p = fig.add_axes([x_cursor, y0, pw, ph])
         ax_p.set_facecolor('#f9f9f9')
         for sp in ax_p.spines.values():
             sp.set_edgecolor('#cccccc')
@@ -426,15 +427,19 @@ def render_cover_page(pdf, bounds, map_name, quadrants, collar_imgs):
 
         arr = collar_imgs.get(key)
         if arr is not None and arr.size > 0:
-            ax_p.imshow(arr, aspect='equal', interpolation='bilinear')
+            # aspect='auto' fills the panel box — avoids blank space when the
+            # image's pixel ratio doesn't match the panel shape.
+            ax_p.imshow(arr, aspect='auto', interpolation='bilinear')
         else:
             ax_p.text(0.5, 0.5, '—', ha='center', va='center',
                       fontsize=10, color='#bbb', transform=ax_p.transAxes)
 
         ax_p.set_title(label, fontsize=7, color='#555', pad=3)
+        x_cursor += pw + PANEL_GAP
 
     # ── 2×2 layout diagram ───────────────────────────────────────────────
-    diag_top    = panel_top - PANEL_H - 0.022
+    max_panel_h = max(ph for _, _, _, ph in panel_defs)
+    diag_top    = panel_top - max_panel_h - 0.022
     diag_height = 0.365
     ax = fig.add_axes([0.10, diag_top - diag_height, 0.80, diag_height])
     ax.set_xlim(-0.18, 2.18)
@@ -511,6 +516,34 @@ def render_cover_page(pdf, bounds, map_name, quadrants, collar_imgs):
     plt.close(fig)
 
 
+
+# ---------------------------------------------------------------------------
+# Name formatter
+# ---------------------------------------------------------------------------
+def derive_map_name(input_path):
+    """
+    Returns a formatted map name derived from the file name. Returns a 
+    name like `Sea Cliff, NY`. This assumes a city name does not contain
+    a number and states are always two charachters. 
+    
+    Args:
+        input_path (str): File path of .tif file
+
+    Returns:
+        str: Formatted name 
+    """
+    base = os.path.splitext(os.path.basename(input_path))[0]
+    parts = base.split('_')
+    
+    state = parts[0]
+    # find index of first part that looks like a number (the date)
+    date_idx = next((i for i, p in enumerate(parts) if p.isdigit()), len(parts))
+    
+    city_parts = parts[1:date_idx]
+    city = ' '.join(p.title() for p in city_parts)
+    
+    return f"{city}, {state}"
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -522,7 +555,7 @@ def main():
     parser.add_argument('input',
                         help='Path to the GeoTIFF file')
     parser.add_argument('-o', '--output',
-                        help='Output PDF path (default: <input>_split.pdf)')
+                        help='Output PDF path (default: outputs/<input>_split.pdf)')
     parser.add_argument('--name',
                         help='Quadrangle name for display (default: from filename)')
     parser.add_argument('--max-pixels', type=int, default=30_000_000, metavar='N',
@@ -532,10 +565,18 @@ def main():
     if not os.path.isfile(args.input):
         sys.exit(f'Error: file not found: {args.input}')
 
-    output_path = args.output or os.path.splitext(args.input)[0] + '_split.pdf'
-    map_name    = (args.name
-                   or os.path.splitext(os.path.basename(args.input))[0]
-                      .replace('_', ' ').replace('-', ' ').title())
+    if args.output:
+        output_path = args.output
+    else:
+        repo_root  = os.path.dirname(os.path.abspath(__file__))
+        output_dir = os.path.join(repo_root, 'outputs')
+        os.makedirs(output_dir, exist_ok=True)
+        base_name  = os.path.splitext(os.path.basename(args.input))[0]
+        output_path = os.path.join(output_dir, base_name + '_split.pdf')
+    # map_name    = (args.name
+    #                or os.path.splitext(os.path.basename(args.input))[0]
+    #                   .replace('_', ' ').replace('-', ' ').title())
+    map_name = args.name or derive_map_name(args.input)
 
     print(f'Loading   {args.input} …')
     img, bounds, collar_imgs = load_geotiff(args.input, max_pixels=args.max_pixels)

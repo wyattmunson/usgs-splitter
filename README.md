@@ -91,13 +91,13 @@ python usgs_splitter.py <input.tif> [-o <output.pdf>] [--name "Quad Name"] [--ma
 | Argument         | Description                                                                                                                                 |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `input`          | Path to the USGS quadrangle GeoTIFF file **(required)**                                                                                     |
-| `-o`, `--output` | Output PDF path. Defaults to `<input>_split.pdf` in the same directory                                                                      |
+| `-o`, `--output` | Output PDF path. Defaults to `outputs/<input>_split.pdf` in the repo root                                                                  |
 | `--name`         | Display name for the quadrangle. Defaults to a cleaned-up version of the filename                                                           |
 | `--max-pixels N` | Downsample the map area if it exceeds N pixels before splitting. Useful for limiting memory use on large files. Default: `30000000` (30 MP) |
 
 ### Examples
 
-Basic usage — output PDF written next to the input file:
+Basic usage — output PDF written to `outputs/VA_Richmond_20220920_TM_geo_split.pdf`:
 
 ```bash
 python usgs_splitter.py VA_Richmond_20220920_TM_geo.tif
