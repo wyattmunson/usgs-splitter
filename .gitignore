@@ -1,6 +1,8 @@
 __pycache__
 inputs/*
 !inputs/.gitkeep
+inputs-completed/*
+!inputs-completed/.gitkeep
 outputs/*
 !outputs/.gitkeep
 .claude

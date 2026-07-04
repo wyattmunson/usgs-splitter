@@ -357,7 +357,8 @@ def render_quadrant_page(pdf, name, img, bounds, page_num, map_name):
                       edgecolor='none', boxstyle='round,pad=0.35'))
 
     fig.text(0.985, 0.012, f'Page {page_num}',
-             ha='right', va='bottom', fontsize=8, color='#555')
+             ha='right', va='bottom', fontsize=8, color='#555', bbox=dict(facecolor='#0050a0', alpha=0.80,
+                      edgecolor='none', boxstyle='round,pad=0.35'))
 
     plt.tight_layout(pad=0.55)
     pdf.savefig(fig)
