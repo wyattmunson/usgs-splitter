@@ -117,6 +117,14 @@ Limit memory use for a large file:
 python usgs_splitter.py large_quad.tif --max-pixels 15000000
 ```
 
+### Bulk Processor
+
+Automatically generate multiple maps. Add maps to the `inputs/` directory. Map names will be automatically generated and outputted to the `outputs/` directory. Inputs that have been processed will be moved to the `inputs-completed/` directory.
+
+```bash
+./run_batch.sh
+```
+
 ---
 
 ## Printing
