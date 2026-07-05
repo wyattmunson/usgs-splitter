@@ -94,6 +94,7 @@ python usgs_splitter.py <input.tif> [-o <output.pdf>] [--name "Quad Name"] [--ma
 | `-o`, `--output` | Output PDF path. Defaults to `outputs/<input>_split.pdf` in the repo root                                                                  |
 | `--name`         | Display name for the quadrangle. Defaults to a cleaned-up version of the filename                                                           |
 | `--max-pixels N` | Downsample the map area if it exceeds N pixels before splitting. Useful for limiting memory use on large files. Default: `30000000` (30 MP) |
+| `--dpi N`, `-d N` | Split map DPI as integer. Lower DPIs will increase processing time. Input DPI is likely no more than 300. Default: `300`. |
 
 ### Examples
 
