@@ -390,9 +390,9 @@ def render_cover_page(pdf, bounds, map_name, quadrants, collar_imgs):
 
     # ── Title ────────────────────────────────────────────────────────────
     fig.text(0.5, 0.970, 'USGS Quadrangle  ·  Print Split',
-             ha='center', va='top', fontsize=15, fontweight='bold', color='#222')
+             ha='center', va='top', fontsize=12, fontweight='bold', color='#222')
     fig.text(0.5, 0.934, map_name,
-             ha='center', va='top', fontsize=13, color='#0050a0', fontweight='bold')
+             ha='center', va='top', fontsize=16, color='#0050a0', fontweight='bold')
     fig.text(0.5, 0.902,
              f'{dms_str(west, False)} – {dms_str(east, False)}'
              f'   ·   {dms_str(south, True)} – {dms_str(north, True)}',
@@ -580,8 +580,7 @@ def main():
     #                or os.path.splitext(os.path.basename(args.input))[0]
     #                   .replace('_', ' ').replace('-', ' ').title())
     map_name = args.name or derive_map_name(args.input)
-    
-    dpi = int(args.dpi) or 300
+    dpi = int(args.dpi or 300)
 
     print(f'Loading   {args.input} …')
     img, bounds, collar_imgs = load_geotiff(args.input, max_pixels=args.max_pixels)
